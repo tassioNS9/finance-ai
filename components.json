@@ -18,5 +18,3 @@
     "hooks": "@/app/_hooks"
   }
 }
-
-// Fazendo as configurações de mudança de diretórios para os componentes salvarao os componentes na pasta desejada
