@@ -1,31 +1,14 @@
-"use client";
-
-import { ArrowDownUpIcon } from "lucide-react";
 import { Button } from "./ui/button";
-// import UpsertTransactionDialog from "./upsert-transaction-dialog";
-// import {
-//   Tooltip,
-//   TooltipContent,
-//   TooltipProvider,
-//   TooltipTrigger,
-// } from "./ui/tooltip";
-
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/app/_components/ui/dialog";
-
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { TransactionType } from "@prisma/client";
-import { TransactionCategory } from "@prisma/client";
-import { TransactionPaymentMethod } from "@prisma/client";
+} from "./ui/dialog";
 import {
   Form,
   FormControl,
@@ -49,54 +32,63 @@ import {
   TRANSACTION_TYPE_OPTIONS,
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
-import { DialogClose } from "@radix-ui/react-dialog";
+import { z } from "zod";
+import {
+  TransactionType,
+  TransactionCategory,
+  TransactionPaymentMethod,
+} from "@prisma/client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { upsertTransaction } from "../_actions/add-transaction/index";
-import { useState } from "react";
-//import { addTransaction } from "../_actions/add-transaction";
 
-// interface AddTransactionButtonProps {
-//   userCanAddTransaction?: boolean;
-// }
-// Trim é para nao considerar espaços em branco
-// nativeEnum é para validar se o valor é um dos valores do enum
+interface UpsertTransactionDialogProps {
+  isOpen: boolean;
+  defaultValues?: FormSchema;
+  transactionId?: string;
+  setIsOpen: (isOpen: boolean) => void;
+}
 
 const formSchema = z.object({
   name: z.string().trim().min(1, {
-    message: "Nome da transação é obrigatório.",
+    message: "O nome é obrigatório.",
   }),
   amount: z
     .number({
-      message: "Valor da transação é obrigatório.",
+      required_error: "O valor é obrigatório.",
     })
     .positive({
-      message: "Informe um valor válido.",
+      message: "O valor deve ser positivo.",
     }),
   type: z.nativeEnum(TransactionType, {
-    required_error: "Tipo da transação é obrigatório.",
+    required_error: "O tipo é obrigatório.",
   }),
   category: z.nativeEnum(TransactionCategory, {
-    required_error: "Categoria da transação é obrigatória.",
+    required_error: "A categoria é obrigatória.",
   }),
   paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
-    required_error: "Método de pagamento é obrigatório.",
+    required_error: "O método de pagamento é obrigatório.",
   }),
   date: z.date({
-    required_error: "Data da transação é obrigatória.",
+    required_error: "A data é obrigatória.",
   }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
 
-const AddTransactionButton = () => {
-  const [dialogIsOpen, setDialogIsOpen] = useState(false);
-
+const UpsertTransactionDialog = ({
+  isOpen,
+  defaultValues,
+  transactionId,
+  setIsOpen,
+}: UpsertTransactionDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
+    defaultValues: defaultValues ?? {
       amount: 50,
       category: TransactionCategory.OTHER,
       date: new Date(),
+      name: "",
       paymentMethod: TransactionPaymentMethod.CASH,
       type: TransactionType.EXPENSE,
     },
@@ -104,38 +96,35 @@ const AddTransactionButton = () => {
 
   const onSubmit = async (data: FormSchema) => {
     try {
-      console.log({ data });
-      await upsertTransaction(data);
-      setDialogIsOpen(false);
+      await upsertTransaction({ ...data, id: transactionId });
+      setIsOpen(false);
       form.reset();
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
+  const isUpdate = Boolean(transactionId);
+
   return (
     <Dialog
-      open={dialogIsOpen}
+      open={isOpen}
       onOpenChange={(open) => {
-        setDialogIsOpen(open);
+        setIsOpen(open);
         if (!open) {
           form.reset();
         }
       }}
     >
-      <DialogTrigger>
-        <Button className="rounded-full font-bold">
-          Adicionar transação
-          <ArrowDownUpIcon />
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild></DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Adicionar transação</DialogTitle>
-          <DialogDescription>
-            Preencha os campos abaixo para adicionar uma nova transação.
-          </DialogDescription>
+          <DialogTitle>
+            {isUpdate ? "Atualizar" : "Criar"} transação
+          </DialogTitle>
+          <DialogDescription>Insira as informações abaixo</DialogDescription>
         </DialogHeader>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
@@ -145,13 +134,12 @@ const AddTransactionButton = () => {
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome da transação" {...field} />
+                    <Input placeholder="Digite o nome..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="amount"
@@ -160,7 +148,7 @@ const AddTransactionButton = () => {
                   <FormLabel>Valor</FormLabel>
                   <FormControl>
                     <MoneyInput
-                      placeholder="Valor da transação"
+                      placeholder="Digite o valor..."
                       value={field.value}
                       onValueChange={({ floatValue }) =>
                         field.onChange(floatValue)
@@ -173,7 +161,6 @@ const AddTransactionButton = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="type"
@@ -186,7 +173,7 @@ const AddTransactionButton = () => {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tipo" />
+                        <SelectValue placeholder="Select a verified email to display" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -201,7 +188,6 @@ const AddTransactionButton = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="category"
@@ -214,7 +200,7 @@ const AddTransactionButton = () => {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma Categotia" />
+                        <SelectValue placeholder="Selecione a categoria..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -229,20 +215,19 @@ const AddTransactionButton = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="paymentMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Método de Pagamento</FormLabel>
+                  <FormLabel>Método de pagamento</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um método de pagamento" />
+                        <SelectValue placeholder="Selecione um método de pagamento..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -257,7 +242,6 @@ const AddTransactionButton = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="date"
@@ -269,14 +253,15 @@ const AddTransactionButton = () => {
                 </FormItem>
               )}
             />
-
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit">Adicionar</Button>
+              <Button type="submit">
+                {isUpdate ? "Atualizar" : "Adicionar"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -285,4 +270,4 @@ const AddTransactionButton = () => {
   );
 };
 
-export default AddTransactionButton;
+export default UpsertTransactionDialog;
