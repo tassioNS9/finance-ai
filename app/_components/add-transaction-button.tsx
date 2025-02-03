@@ -50,6 +50,9 @@ import {
 } from "../_constants/transactions";
 import { DatePicker } from "./ui/date-picker";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { addTransaction } from "../_actions/add-transaction";
+import { useState } from "react";
+//import { addTransaction } from "../_actions/add-transaction";
 
 // interface AddTransactionButtonProps {
 //   userCanAddTransaction?: boolean;
@@ -59,33 +62,39 @@ import { DialogClose } from "@radix-ui/react-dialog";
 
 const formSchema = z.object({
   name: z.string().trim().min(1, {
-    message: "Nome da transação é obrigatório",
+    message: "Nome da transação é obrigatório.",
   }),
-  amount: z.string().trim().min(1, {
-    message: "Valor da transação é obrigatório",
-  }),
+  amount: z
+    .number({
+      message: "Valor da transação é obrigatório.",
+    })
+    .positive({
+      message: "Informe um valor válido.",
+    }),
   type: z.nativeEnum(TransactionType, {
-    required_error: "Tipo da transação é obrigatório",
+    required_error: "Tipo da transação é obrigatório.",
   }),
   category: z.nativeEnum(TransactionCategory, {
-    required_error: "Categoria da transação é obrigatória",
+    required_error: "Categoria da transação é obrigatória.",
   }),
   paymentMethod: z.nativeEnum(TransactionPaymentMethod, {
-    required_error: "Método de pagamento é obrigatório",
+    required_error: "Método de pagamento é obrigatório.",
   }),
   date: z.date({
-    required_error: "Data da transação é obrigatória",
+    required_error: "Data da transação é obrigatória.",
   }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
 
 const AddTransactionButton = () => {
+  const [dialogIsOpen, setDialogIsOpen] = useState(false);
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      amount: "",
+      amount: 50,
       category: TransactionCategory.OTHER,
       date: new Date(),
       paymentMethod: TransactionPaymentMethod.CASH,
@@ -93,13 +102,27 @@ const AddTransactionButton = () => {
     },
   });
 
-  const onSubmit = (data: FormSchema) => {
-    console.log({ data });
-    console.log("submit");
+  const onSubmit = async (data: FormSchema) => {
+    try {
+      console.log({ data });
+      await addTransaction(data);
+      setDialogIsOpen(false);
+      form.reset();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
-    <Dialog onOpenChange={(isOpen) => !isOpen && form.reset()}>
+    <Dialog
+      open={dialogIsOpen}
+      onOpenChange={(open) => {
+        setDialogIsOpen(open);
+        if (!open) {
+          form.reset();
+        }
+      }}
+    >
       <DialogTrigger>
         <Button className="rounded-full font-bold">
           Adicionar transação
@@ -136,7 +159,15 @@ const AddTransactionButton = () => {
                 <FormItem>
                   <FormLabel>Valor</FormLabel>
                   <FormControl>
-                    <MoneyInput placeholder="Valor da transação" {...field} />
+                    <MoneyInput
+                      placeholder="Valor da transação"
+                      value={field.value}
+                      onValueChange={({ floatValue }) =>
+                        field.onChange(floatValue)
+                      }
+                      onBlur={field.onBlur}
+                      disabled={field.disabled}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
