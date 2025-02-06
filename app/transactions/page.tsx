@@ -5,6 +5,7 @@ import { transactionsColumns } from "./_columns";
 import { DataTable } from "../_components/ui/data-table";
 import AddTransactionButton from "../_components/add-transaction-button";
 import Navbar from "../_components/navbar";
+import { ScrollArea } from "@radix-ui/react-scroll-area";
 
 const TransactionsPage = async () => {
   const { userId } = await auth();
@@ -29,10 +30,12 @@ const TransactionsPage = async () => {
           <h1 className="text-2xl font-bold">Transações</h1>
           <AddTransactionButton />
         </div>
-        <DataTable
-          columns={transactionsColumns}
-          data={JSON.parse(JSON.stringify(transactions))}
-        />
+        <ScrollArea>
+          <DataTable
+            columns={transactionsColumns}
+            data={JSON.parse(JSON.stringify(transactions))}
+          />
+        </ScrollArea>
       </div>
     </>
   );
