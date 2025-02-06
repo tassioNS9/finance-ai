@@ -29,11 +29,11 @@ export const upsertTransaction = async (params: UpsertTransactionParams) => {
   await db.transaction.upsert({
     // Adiciona o id no where se existir um id no params e se não existir, passa uma string vazia para o where não ser considerado na query do upsert
     // Se existir um id no params, ele vai atualizar a transação com esse id, se não existir, ele vai criar uma nova transação
+    update: { ...params, userId },
+    create: { ...params, userId },
     where: {
       id: params?.id ?? "",
     },
-    update: { ...params, userId },
-    create: { ...params, userId },
   });
   // Revalida a página de transações
   revalidatePath("/transactions");
