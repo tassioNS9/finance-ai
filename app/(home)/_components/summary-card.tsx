@@ -1,4 +1,5 @@
 //import AddTransactionButton from "@/app/_components/add-transaction-button";
+import AddTransactionButton from "@/app/_components/add-transaction-button";
 import { Card, CardContent, CardHeader } from "@/app/_components/ui/card";
 import { ReactNode } from "react";
 
@@ -36,10 +37,7 @@ const SummaryCard = ({
           }).format(amount)}
         </p>
 
-        {size === "large" && (
-          <div>dsds</div>
-          //   <AddTransactionButton userCanAddTransaction={userCanAddTransaction} />
-        )}
+        {size === "large" && <AddTransactionButton />}
       </CardContent>
     </Card>
   );
