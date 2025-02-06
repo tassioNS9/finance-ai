@@ -123,7 +123,8 @@ const AddTransactionButton = () => {
         }
       }}
     >
-      <DialogTrigger>
+      {/* // asChild é para passar o botão como filho do DialogTrigger */}
+      <DialogTrigger asChild>
         <Button className="rounded-full font-bold">
           Adicionar transação
           <ArrowDownUpIcon />
