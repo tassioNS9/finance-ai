@@ -1,11 +1,10 @@
 import { db } from "@/app/_lib/prisma";
 import { TransactionType } from "@prisma/client";
-import { TotalExpensePerCategory } from "./types";
+import { TotalExpensePerCategory, TransactionPercentagePerType } from "./types";
 import { auth } from "@clerk/nextjs/server";
 
 export const getDashboard = async (month: string) => {
   const { userId } = await auth();
-
   if (!userId) {
     throw new Error("Unauthorized");
   }
@@ -41,7 +40,6 @@ export const getDashboard = async (month: string) => {
     )?._sum?.amount,
   );
   const balance = depositsTotal - investmentsTotal - expensesTotal;
-
   const transactionsTotal = Number(
     (
       await db.transaction.aggregate({
@@ -50,7 +48,7 @@ export const getDashboard = async (month: string) => {
       })
     )._sum.amount,
   );
-  const typesPercentage = {
+  const typesPercentage: TransactionPercentagePerType = {
     [TransactionType.DEPOSIT]: Math.round(
       (Number(depositsTotal || 0) / Number(transactionsTotal)) * 100,
     ),
@@ -61,32 +59,30 @@ export const getDashboard = async (month: string) => {
       (Number(investmentsTotal || 0) / Number(transactionsTotal)) * 100,
     ),
   };
-  const totalExpensePerCategory: TotalExpensePerCategory[] =
-    // agrupando todas as despesas por categoria e somando tudo
-    (
-      await db.transaction.groupBy({
-        by: ["category"],
-        where: {
-          ...where,
-          type: TransactionType.EXPENSE,
-        },
-        _sum: {
-          amount: true,
-        },
-      })
-    ).map((category) => ({
-      category: category.category,
-      totalAmount: Number(category._sum.amount),
-      percentageOfTotal: Math.round(
-        (Number(category._sum.amount) / Number(expensesTotal)) * 100,
-      ),
-    }));
+  const totalExpensePerCategory: TotalExpensePerCategory[] = (
+    await db.transaction.groupBy({
+      by: ["category"],
+      where: {
+        ...where,
+        type: TransactionType.EXPENSE,
+      },
+      _sum: {
+        amount: true,
+      },
+    })
+  ).map((category) => ({
+    category: category.category,
+    totalAmount: Number(category._sum.amount),
+    percentageOfTotal: Math.round(
+      (Number(category._sum.amount) / Number(expensesTotal)) * 100,
+    ),
+  }));
+  console.log(totalExpensePerCategory, "logo");
   const lastTransactions = await db.transaction.findMany({
     where,
     orderBy: { date: "desc" },
     take: 15,
   });
-
   return {
     balance,
     depositsTotal,
