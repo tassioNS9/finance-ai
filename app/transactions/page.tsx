@@ -30,7 +30,7 @@ const TransactionsPage = async () => {
           <h1 className="text-2xl font-bold">Transações</h1>
           <AddTransactionButton />
         </div>
-        <ScrollArea>
+        <ScrollArea className="h-full">
           <DataTable
             columns={transactionsColumns}
             data={JSON.parse(JSON.stringify(transactions))}
